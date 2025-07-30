@@ -180,8 +180,13 @@ export default function ResponderDashboard() {
   // Helper for completed today
   const today = new Date();
   const isToday = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+    const today = new Date().toDateString();
+    return new Date(dateStr).toDateString() === today;
+  };
+
+  // Sort reports from newest to oldest
+  const sortReportsByDate = (reports: any[]) => {
+    return reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   };
   const completedToday = myCases.filter((r: any) => r.status === 'Completed' && isToday(r.completedTime || r.updatedAt || r.takenTime));
   // Average response time in minutes for completed today
@@ -298,20 +303,46 @@ export default function ResponderDashboard() {
                 </TouchableOpacity>
               ))}
             </View>
-            {filteredReports.map((report) => (
+            {sortReportsByDate(filteredReports).map((report) => (
               <View key={report.id} style={[styles.reportCard, !report.read && styles.unreadReportCard]}>
                 {report.photo && (
                   <TouchableOpacity onPress={() => openImageModal(report.photo)}>
                     <Image source={{ uri: report.photo }} style={{ width: '100%', height: 160, borderRadius: 8, marginBottom: 8 }} resizeMode="cover" />
                   </TouchableOpacity>
                 )}
-                <Text style={[styles.reportTitle, !report.read && { color: '#fff' }]}>{report.title || `Emergency Report - ${report.status}`}</Text>
+                <Text style={[styles.reportTitle, !report.read && { color: '#fff' }]}>
+                  {report.chiefComplaint || report.title || `Emergency Report - ${report.status}`}
+                </Text>
                 <Text style={[styles.reportDesc, !report.read && { color: '#fff' }]}>{report.description}</Text>
-                <Text style={[{ color: '#888', fontSize: 12, marginBottom: 4 }, !report.read && { color: '#fff' }]}>Reported by: {(report.userName && report.userName !== 'Unknown') ? report.userName : (report.userEmail || report.user) || 'Unknown'}</Text>
-                <Text style={[styles.reportLocation, !report.read && { color: '#fff' }]}>📍 {report.location?.lat || report.location?.coords?.latitude}, {report.location?.lng || report.location?.coords?.longitude}</Text>
+                
+                {/* User Information */}
+                <View style={styles.userInfoSection}>
+                  <Text style={[styles.userInfoLabel, !report.read && { color: '#fff' }]}>
+                    📞 Contact: {report.contactNumber || 'N/A'}
+                  </Text>
+                  <Text style={[styles.userInfoLabel, !report.read && { color: '#fff' }]}>
+                    👤 Reporter: {report.fullName || 'Anonymous'}
+                  </Text>
+                </View>
+                
+                {/* Person Involved */}
+                <Text style={[styles.personInvolved, !report.read && { color: '#fff' }]}>
+                  👥 Person Involved: {report.personInvolved || 'N/A'}
+                </Text>
+                
+                {/* Location Information */}
+                <Text style={[styles.reportLocation, !report.read && { color: '#fff' }]}>
+                  📍 {report.location?.lat || report.location?.coords?.latitude}, {report.location?.lng || report.location?.coords?.longitude}
+                </Text>
+                
+                {/* Timestamp */}
+                <Text style={[styles.timestamp, !report.read && { color: '#fff' }]}>
+                  🕒 {report.createdAt ? new Date(report.createdAt).toLocaleString() : 'N/A'}
+                </Text>
+                
                 <View style={styles.reportActions}>
                   <TouchableOpacity style={styles.viewBtn} onPress={() => { markAsRead(report.id); openViewReportModal(report); }}>
-                    <Text style={styles.viewBtnText}>View Report</Text>
+                    <Text style={styles.viewBtnText}>View Details</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.takeBtn} onPress={() => { markAsRead(report.id); takeCase(report.id); }}><Text style={styles.takeBtnText}>Take Case</Text></TouchableOpacity>
                   <TouchableOpacity style={styles.rejectBtn} onPress={() => { markAsRead(report.id); rejectCase(report.id); }}><Text style={styles.rejectBtnText}>Reject</Text></TouchableOpacity>
@@ -325,18 +356,42 @@ export default function ResponderDashboard() {
             <Text style={styles.sectionTitle}>My Cases</Text>
             {myCases.length === 0 ? (
               <Text style={{ color: '#888', textAlign: 'center', marginTop: 20 }}>No cases taken yet.</Text>
-            ) : myCases.map((report: any) => (
+            ) : sortReportsByDate(myCases).map((report: any) => (
               <View key={report.id} style={styles.reportCard}>
                 {report.photo && (
                   <TouchableOpacity onPress={() => openImageModal(report.photo)}>
                     <Image source={{ uri: report.photo }} style={{ width: '100%', height: 160, borderRadius: 8, marginBottom: 8 }} resizeMode="cover" />
                   </TouchableOpacity>
                 )}
-                <Text style={styles.reportTitle}>{report.title || `Emergency Report - ${report.status}`}</Text>
+                <Text style={styles.reportTitle}>
+                  {report.chiefComplaint || report.title || `Emergency Report - ${report.status}`}
+                </Text>
                 <Text style={styles.reportDesc}>{report.description}</Text>
-                <Text style={{ color: '#888', fontSize: 12, marginBottom: 4 }}>Reported by: {(report.userName && report.userName !== 'Unknown') ? report.userName : (report.userEmail || report.user) || 'Unknown'}</Text>
-                <Text style={styles.reportLocation}>📍 {report.location?.lat || report.location?.coords?.latitude}, {report.location?.lng || report.location?.coords?.longitude}</Text>
+                
+                {/* User Information */}
+                <View style={styles.userInfoSection}>
+                  <Text style={styles.userInfoLabel}>
+                    📞 Contact: {report.contactNumber || 'N/A'}
+                  </Text>
+                  <Text style={styles.userInfoLabel}>
+                    👤 Reporter: {report.fullName || 'Anonymous'}
+                  </Text>
+                </View>
+                
+                {/* Location Information */}
+                <Text style={styles.reportLocation}>
+                  📍 {report.location?.lat || report.location?.coords?.latitude}, {report.location?.lng || report.location?.coords?.longitude}
+                </Text>
+                
+                {/* Timestamp */}
+                <Text style={styles.timestamp}>
+                  🕒 {report.createdAt ? new Date(report.createdAt).toLocaleString() : 'N/A'}
+                </Text>
+                
                 <View style={styles.reportActions}>
+                  <TouchableOpacity style={styles.viewBtn} onPress={() => openViewReportModal(report)}>
+                    <Text style={styles.viewBtnText}>View Details</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity style={styles.takeBtn} onPress={() => openLocateModal(report)}>
                     <Text style={styles.takeBtnText}>Locate Now</Text>
                   </TouchableOpacity>
@@ -350,7 +405,7 @@ export default function ResponderDashboard() {
             <Text style={styles.sectionTitle}>Rejected Cases</Text>
             {rejectedCases.length === 0 ? (
               <Text style={{ color: '#888', textAlign: 'center', marginTop: 20 }}>No rejected cases.</Text>
-            ) : rejectedCases.map((report: any) => (
+            ) : sortReportsByDate(rejectedCases).map((report: any) => (
               <View key={report.id} style={[styles.reportCard, !report.read && styles.unreadReportCard]}>
                 {report.photo && (
                   <TouchableOpacity onPress={() => openImageModal(report.photo)}>
@@ -437,18 +492,91 @@ export default function ResponderDashboard() {
             </TouchableOpacity>
             {viewedReport && (
               <ScrollView style={{ width: '100%' }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 12, color: '#FF3B3B' }}>
+                  {viewedReport.chiefComplaint || viewedReport.title || 'Emergency Report'}
+                </Text>
+                
+                {/* Incident Photo */}
                 {viewedReport.photo && (
-                  <Image source={{ uri: viewedReport.photo }} style={{ width: '100%', height: 180, borderRadius: 10, marginBottom: 10 }} resizeMode="cover" />
+                  <TouchableOpacity onPress={() => openImageModal(viewedReport.photo)}>
+                    <Image source={{ uri: viewedReport.photo }} style={{ width: '100%', height: 200, borderRadius: 10, marginBottom: 15 }} resizeMode="cover" />
+                  </TouchableOpacity>
                 )}
-                <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 6 }}>{viewedReport.title || 'Emergency Report'}</Text>
-                <Text style={{ color: '#555', marginBottom: 8 }}>{viewedReport.description}</Text>
-                <Text style={{ color: '#888', fontSize: 13, marginBottom: 2 }}>Reported by: {(viewedReport.userName && viewedReport.userName !== 'Unknown') ? viewedReport.userName : (viewedReport.userEmail || viewedReport.user) || 'Unknown'}</Text>
-                <Text style={{ color: '#888', fontSize: 13, marginBottom: 2 }}>Contact: {viewedReport.userContact || 'N/A'}</Text>
-                <Text style={{ color: '#888', fontSize: 13, marginBottom: 2 }}>Status: {viewedReport.status}</Text>
-                <Text style={{ color: '#888', fontSize: 13, marginBottom: 2 }}>Priority: {viewedReport.priority}</Text>
-                <Text style={{ color: '#888', fontSize: 13, marginBottom: 2 }}>Type: {viewedReport.type}</Text>
-                <Text style={{ color: '#888', fontSize: 13, marginBottom: 2 }}>Location: {viewedReport.location?.lat || viewedReport.location?.coords?.latitude}, {viewedReport.location?.lng || viewedReport.location?.coords?.longitude}</Text>
-                <Text style={{ color: '#888', fontSize: 13, marginBottom: 2 }}>Created: {viewedReport.createdAt ? new Date(viewedReport.createdAt).toLocaleString() : 'N/A'}</Text>
+                
+                {/* User Information Section */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>👤 Reporter Information</Text>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Full Name:</Text>
+                    <Text style={styles.detailValue}>{viewedReport.fullName || 'Anonymous'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Contact Number:</Text>
+                    <Text style={styles.detailValue}>{viewedReport.contactNumber || 'N/A'}</Text>
+                  </View>
+                </View>
+                
+                {/* Incident Details Section */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>🚨 Incident Details</Text>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Chief Complaint:</Text>
+                    <Text style={styles.detailValue}>{viewedReport.chiefComplaint || 'N/A'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Person Involved:</Text>
+                    <Text style={styles.detailValue}>{viewedReport.personInvolved || 'N/A'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Description:</Text>
+                    <Text style={styles.detailValue}>{viewedReport.description || 'No additional details provided'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Status:</Text>
+                    <Text style={styles.detailValue}>{viewedReport.status || 'Awaiting Assessment'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Priority:</Text>
+                    <Text style={styles.detailValue}>{viewedReport.priority || 'Medium'}</Text>
+                  </View>
+                </View>
+                
+                {/* Location Information Section */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>📍 Location Information</Text>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Coordinates:</Text>
+                    <Text style={styles.detailValue}>
+                      {viewedReport.location?.lat || viewedReport.location?.coords?.latitude}, {viewedReport.location?.lng || viewedReport.location?.coords?.longitude}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.mapButton}
+                    onPress={() => {
+                      const lat = viewedReport.location?.lat || viewedReport.location?.coords?.latitude;
+                      const lng = viewedReport.location?.lng || viewedReport.location?.coords?.longitude;
+                      if (Platform.OS === 'web') {
+                        window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
+                      } else {
+                        // For mobile, you might want to open the native maps app
+                        // This would require additional setup
+                      }
+                    }}
+                  >
+                    <Text style={styles.mapButtonText}>🗺️ Open in Maps</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                {/* Timestamp Information */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>🕒 Timestamp</Text>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Reported:</Text>
+                    <Text style={styles.detailValue}>
+                      {viewedReport.createdAt ? new Date(viewedReport.createdAt).toLocaleString() : 'N/A'}
+                    </Text>
+                  </View>
+                </View>
               </ScrollView>
             )}
           </View>
@@ -612,4 +740,67 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   unreadReportCard: { backgroundColor: '#23272f' },
+  userInfoSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  userInfoLabel: {
+    fontSize: 13,
+    color: '#888',
+  },
+  personInvolved: {
+    fontSize: 13,
+    color: '#888',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 8,
+  },
+  detailSection: {
+    backgroundColor: '#f8f9fb',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  detailSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#377DFF',
+    marginBottom: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: '#888',
+    fontWeight: 'bold',
+  },
+  detailValue: {
+    fontSize: 13,
+    color: '#222',
+    fontWeight: 'bold',
+  },
+  mapButton: {
+    backgroundColor: '#377DFF',
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  mapButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
 }); 

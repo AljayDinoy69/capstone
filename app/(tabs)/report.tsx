@@ -6,13 +6,18 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function EmergencyReportScreen() {
   const router = useRouter();
-  const { users, getUserByEmail } = useUser();
+  const { users, getUserByEmail, user } = useUser();
   const responders = users.filter(u => u.role === 'responder');
-  const [title, setTitle] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
+  const [chiefComplaint, setChiefComplaint] = useState('');
+  const [showComplaintDropdown, setShowComplaintDropdown] = useState(false);
+  const [personInvolved, setPersonInvolved] = useState('');
+  const [showPersonDropdown, setShowPersonDropdown] = useState(false);
   const [description, setDescription] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoLoading, setPhotoLoading] = useState(false);
@@ -20,7 +25,49 @@ export default function EmergencyReportScreen() {
   const [locationStatus, setLocationStatus] = useState('');
   const [selectedResponders, setSelectedResponders] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  // Removed dropdown state
+
+  // Pre-fill user information if logged in
+  useEffect(() => {
+    if (user) {
+      setFullName(user.name || '');
+      setContactNumber(user.contact || '');
+    }
+  }, [user]);
+
+  // Chief Complaint options
+  const complaintOptions = [
+    'Medical Emergency',
+    'Traffic Accident',
+    'Fire Emergency',
+    'Crime/Assault',
+    'Natural Disaster',
+    'Chemical Spill',
+    'Building Collapse',
+    'Gas Leak',
+    'Water Emergency',
+    'Power Outage',
+    'Animal Attack',
+    'Drowning',
+    'Suicide Attempt',
+    'Domestic Violence',
+    'Industrial Accident'
+  ];
+
+  // Person Involved options
+  const personInvolvedOptions = [
+    '1 Person',
+    '2 People',
+    '3 People',
+    '4 People',
+    '5 People',
+    '6-10 People',
+    '11-20 People',
+    '21-50 People',
+    '51-100 People',
+    '100+ People',
+    'Unknown',
+    'Other'
+  ];
 
   // Auto-fetch location on mount
   useEffect(() => {
@@ -92,7 +139,18 @@ export default function EmergencyReportScreen() {
 
   // Clear form fields
   const clearForm = () => {
-    setTitle('');
+    // Reset to user profile information if logged in, otherwise clear
+    if (user) {
+      setFullName(user.name || '');
+      setContactNumber(user.contact || '');
+    } else {
+      setFullName('');
+      setContactNumber('');
+    }
+    setChiefComplaint('');
+    setShowComplaintDropdown(false);
+    setPersonInvolved('');
+    setShowPersonDropdown(false);
     setDescription('');
     setPhoto(null);
     setLocation(null);
@@ -102,14 +160,17 @@ export default function EmergencyReportScreen() {
   };
 
   // Submit
-  const canSubmit = photo && selectedResponders.length > 0 && location;
+  const canSubmit = contactNumber.trim() && chiefComplaint && personInvolved && photo && selectedResponders.length > 0 && location;
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
       const report = {
         id: Date.now().toString(),
-        title,
+        fullName: fullName.trim() || (user?.name || 'Anonymous'),
+        contactNumber: contactNumber.trim() || (user?.contact || 'N/A'),
+        chiefComplaint,
+        personInvolved,
         description,
         photo,
         location,
@@ -143,7 +204,23 @@ export default function EmergencyReportScreen() {
       setTimeout(() => {
         setSubmitting(false);
         clearForm();
-        Alert.alert('Report Submitted', 'Your emergency report has been sent to the selected responder(s).');
+        
+        // Create detailed notification message
+        const notificationMessage = `✅ Emergency Report Submitted Successfully!
+
+🚨 Chief Complaint: ${chiefComplaint}
+👤 Reporter: ${fullName.trim() || 'Anonymous'}
+📞 Contact: ${contactNumber}
+👥 Person Involved: ${personInvolved}
+📍 Location: ${location?.coords?.latitude}, ${location?.coords?.longitude}
+📸 Photo: ${photo ? 'Included' : 'Not provided'}
+📝 Description: ${description || 'No additional details'}
+🕒 Submitted: ${new Date().toLocaleString()}
+👥 Sent to: ${selectedResponders.length} responder(s)
+
+Your report has been sent to the selected emergency responders. They will review and respond to your emergency as soon as possible.`;
+        
+        Alert.alert('Report Submitted Successfully!', notificationMessage);
         router.back();
         console.log('Report submitted.');
       }, 1200);
@@ -163,14 +240,123 @@ export default function EmergencyReportScreen() {
         <ThemedView style={styles.card}>
           <ThemedText type="title" style={{ color: '#FF3B3B', textAlign: 'center', marginBottom: 4 }}>⚠️ Emergency Report</ThemedText>
           <ThemedText style={{ textAlign: 'center', marginBottom: 8 }}>Report an emergency incident – No account required</ThemedText>
-          <ThemedText style={styles.sectionLabel}>Incident Title (optional)</ThemedText>
+          
+          {/* Full Name - Optional */}
+          <ThemedText style={styles.sectionLabel}>Full Name (Optional)</ThemedText>
           <TextInput
             style={styles.input}
-            placeholder="Brief description of the incident"
-            value={title}
-            onChangeText={setTitle}
+            placeholder="Enter your full name (optional)"
+            value={fullName}
+            onChangeText={setFullName}
           />
-          <ThemedText style={styles.sectionLabel}>Detailed Description (optional)</ThemedText>
+          
+          {/* Contact Number - Required */}
+          <ThemedText style={styles.sectionLabel}>Contact Number <Text style={{ color: '#FF3B3B' }}>*</Text></ThemedText>
+          <TextInput
+            style={[styles.input, !contactNumber.trim() && styles.inputError]}
+            placeholder="Enter your contact number"
+            value={contactNumber}
+            onChangeText={setContactNumber}
+            keyboardType="phone-pad"
+          />
+          
+          {/* Chief Complaint - Required */}
+          <ThemedText style={styles.sectionLabel}>Chief Complaint <Text style={{ color: '#FF3B3B' }}>*</Text></ThemedText>
+          <TouchableOpacity 
+            style={[styles.dropdownButton, !chiefComplaint && styles.inputError]} 
+            onPress={() => setShowComplaintDropdown(true)}
+          >
+            <Text style={{ color: chiefComplaint ? '#333' : '#999' }}>
+              {chiefComplaint || 'Select the type of emergency'}
+            </Text>
+            <Text style={{ color: '#666' }}>▼</Text>
+          </TouchableOpacity>
+          
+          {/* Chief Complaint Dropdown Modal */}
+          <Modal
+            visible={showComplaintDropdown}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowComplaintDropdown(false)}
+          >
+            <TouchableOpacity 
+              style={styles.modalOverlay} 
+              onPress={() => setShowComplaintDropdown(false)}
+            >
+              <View style={styles.dropdownModal}>
+                <View style={styles.dropdownHeader}>
+                  <Text style={styles.dropdownTitle}>Select Emergency Type</Text>
+                  <TouchableOpacity onPress={() => setShowComplaintDropdown(false)}>
+                    <Text style={styles.closeButton}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.dropdownList}>
+                  {complaintOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option}
+                      style={styles.dropdownOption}
+                      onPress={() => {
+                        setChiefComplaint(option);
+                        setShowComplaintDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownOptionText}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+          
+          {/* Person Involved - Required */}
+          <ThemedText style={styles.sectionLabel}>Person Involved <Text style={{ color: '#FF3B3B' }}>*</Text></ThemedText>
+          <TouchableOpacity 
+            style={[styles.dropdownButton, !personInvolved && styles.inputError]} 
+            onPress={() => setShowPersonDropdown(true)}
+          >
+            <Text style={{ color: personInvolved ? '#333' : '#999' }}>
+              {personInvolved || 'Select who was involved'}
+            </Text>
+            <Text style={{ color: '#666' }}>▼</Text>
+          </TouchableOpacity>
+          
+          {/* Person Involved Dropdown Modal */}
+          <Modal
+            visible={showPersonDropdown}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowPersonDropdown(false)}
+          >
+            <TouchableOpacity 
+              style={styles.modalOverlay} 
+              onPress={() => setShowPersonDropdown(false)}
+            >
+              <View style={styles.dropdownModal}>
+                <View style={styles.dropdownHeader}>
+                  <Text style={styles.dropdownTitle}>Select Person Involved</Text>
+                  <TouchableOpacity onPress={() => setShowPersonDropdown(false)}>
+                    <Text style={styles.closeButton}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.dropdownList}>
+                  {personInvolvedOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option}
+                      style={styles.dropdownOption}
+                      onPress={() => {
+                        setPersonInvolved(option);
+                        setShowPersonDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownOptionText}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+
+          <ThemedText style={styles.sectionLabel}>Detailed Description (Optional)</ThemedText>
           <TextInput
             style={[styles.input, { minHeight: 60 }]}
             placeholder="Provide detailed information about the incident, injuries, damages, etc."
@@ -235,7 +421,9 @@ export default function EmergencyReportScreen() {
             onPress={handleSubmit}
             disabled={!canSubmit || submitting}
           >
-            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Submit Emergency Report</Text>
+            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+              {submitting ? 'Submitting...' : 'Submit Emergency Report'}
+            </Text>
           </TouchableOpacity>
         </ThemedView>
       </ScrollView>
@@ -294,6 +482,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafbfc',
     fontSize: 15,
   },
+  inputError: {
+    borderColor: '#FF3B3B',
+    borderWidth: 1,
+  },
+  dropdownButton: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#f7f7f7',
+    marginTop: 4,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   responderRow: {
     flexDirection: 'row',
     gap: 8,
@@ -350,6 +554,74 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 8,
+  },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginTop: 4,
+    backgroundColor: '#fff',
+    maxHeight: 150,
+    overflow: 'hidden',
+  },
+  dropdownOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  dropdownOptionText: {
+    fontSize: 15,
+    color: '#333',
+  },
+  dropdownBtn: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#f7f7f7',
+    marginTop: 4,
+  },
+  dropdownBtnText: {
+    fontSize: 15,
+    color: '#333',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownModal: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    fontSize: 24,
+    color: '#666',
+  },
+  dropdownList: {
+    maxHeight: 200,
   },
   // Dropdown styles removed
 }); 

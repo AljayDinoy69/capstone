@@ -53,16 +53,24 @@ export default function AdminDashboard() {
     return () => { if (interval) clearInterval(interval); };
   }, [tab]);
 
+  // Sort reports from newest to oldest
+  const sortReportsByDate = (reports: any[]) => {
+    return reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  };
+
   // Filtered users
-  const filteredUsers = users.filter((u: any) =>
-    (roleFilter === 'all' || u.role === roleFilter) &&
-    (deptFilter === 'all' || (u.department || 'None') === deptFilter) &&
-    (
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()) ||
-      (u.department || '').toLowerCase().includes(search.toLowerCase())
-    )
-  );
+  const filteredUsers = users.filter((u: any) => {
+    // Ensure all required properties exist
+    if (!u || !u.name || !u.email || !u.role) return false;
+    
+    return (roleFilter === 'all' || u.role === roleFilter) &&
+      (deptFilter === 'all' || (u.department || 'None') === deptFilter) &&
+      (
+        u.name.toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase()) ||
+        (u.department || '').toLowerCase().includes(search.toLowerCase())
+      );
+  });
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f8f9fb', paddingTop: 24 }}>
@@ -149,25 +157,32 @@ export default function AdminDashboard() {
             <Text style={[styles.tableHeader, { flex: 1 }]}>Badge</Text>
             <Text style={[styles.tableHeader, { flex: 2 }]}>Actions</Text>
           </View>
-          {filteredUsers.map((user: any) => (
-            <View key={user.email} style={styles.tableRow}>
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#43a047', fontSize: 18 }}>●</Text>
+          {filteredUsers.map((user: any) => {
+            // Ensure user has all required properties
+            if (!user || !user.name || !user.email || !user.role) return null;
+            
+            return (
+              <View key={user.email} style={styles.tableRow}>
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#43a047', fontSize: 18 }}>●</Text>
+                </View>
+                <Text style={[styles.tableCell, { flex: 2, fontWeight: 'bold' }]}>{user.name}</Text>
+                <Text style={[styles.tableCell, { flex: 3 }]}>{user.email}</Text>
+                <View style={[styles.tableCell, { flex: 1.5 }]}> 
+                  <Text style={[styles.roleBadge, { backgroundColor: user.roleColor || '#e0e0e0' }]}>{user.role}</Text> 
+                </View>
+                <Text style={[styles.tableCell, { flex: 2 }]}>{user.department || 'None'}</Text>
+                <Text style={[styles.tableCell, { flex: 1 }]}>{user.badge || '-'}</Text>
+                <View style={[styles.tableCell, { flex: 2, flexDirection: 'row', alignItems: 'center' }]}>
+                  <TouchableOpacity style={styles.actionIcon} onPress={() => { setEditUser(user); setShowEditUser(true); }}><Ionicons name="create" size={18} color="#222" /></TouchableOpacity>
+                  <TouchableOpacity style={styles.actionIcon} onPress={async () => {
+                    if (window.confirm && !window.confirm('Are you sure you want to delete this user?')) return;
+                    await deleteUser(user.email);
+                  }}><Ionicons name="trash" size={18} color="#d32f2f" /></TouchableOpacity>
+                </View>
               </View>
-              <Text style={[styles.tableCell, { flex: 2, fontWeight: 'bold' }]}>{user.name}</Text>
-              <Text style={[styles.tableCell, { flex: 3 }]}>{user.email}</Text>
-              <View style={[styles.tableCell, { flex: 1.5 }]}> <Text style={[styles.roleBadge, { backgroundColor: user.roleColor }]}>{user.role}</Text> </View>
-              <Text style={[styles.tableCell, { flex: 2 }]}>{user.department}</Text>
-              <Text style={[styles.tableCell, { flex: 1 }]}>{user.badge}</Text>
-              <View style={[styles.tableCell, { flex: 2, flexDirection: 'row', alignItems: 'center' }]}>
-                <TouchableOpacity style={styles.actionIcon} onPress={() => { setEditUser(user); setShowEditUser(true); }}><Ionicons name="create" size={18} color="#222" /></TouchableOpacity>
-                <TouchableOpacity style={styles.actionIcon} onPress={async () => {
-                  if (window.confirm && !window.confirm('Are you sure you want to delete this user?')) return;
-                  await deleteUser(user.email);
-                }}><Ionicons name="trash" size={18} color="#d32f2f" /></TouchableOpacity>
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </ScrollView>
       )}
       {/* Add User Modal */}
@@ -222,15 +237,15 @@ export default function AdminDashboard() {
             </TouchableOpacity>
             <Text style={styles.profileTitle}>Edit User</Text>
             {error ? <Text style={{ color: 'red', marginBottom: 8 }}>{error}</Text> : null}
-            <TextInput style={styles.profileInput} placeholder="Full Name" value={editUser?.name} onChangeText={t => setEditUser(u => ({ ...u, name: t }))} />
-            <TextInput style={styles.profileInput} placeholder="Email" value={editUser?.email} onChangeText={t => setEditUser(u => ({ ...u, email: t }))} autoCapitalize="none" keyboardType="email-address" />
-            <TextInput style={styles.profileInput} placeholder="Password" value={editUser?.password} onChangeText={t => setEditUser(u => ({ ...u, password: t }))} secureTextEntry />
-            <TextInput style={styles.profileInput} placeholder="Contact Number" value={editUser?.contact} onChangeText={t => setEditUser(u => ({ ...u, contact: t }))} keyboardType="phone-pad" />
-            <TextInput style={styles.profileInput} placeholder="Department" value={editUser?.department} onChangeText={t => setEditUser(u => ({ ...u, department: t }))} />
-            <TextInput style={styles.profileInput} placeholder="Badge (optional)" value={editUser?.badge} onChangeText={t => setEditUser(u => ({ ...u, badge: t }))} />
+            <TextInput style={styles.profileInput} placeholder="Full Name" value={editUser?.name} onChangeText={t => setEditUser((u: any) => ({ ...u, name: t }))} />
+            <TextInput style={styles.profileInput} placeholder="Email" value={editUser?.email} onChangeText={t => setEditUser((u: any) => ({ ...u, email: t }))} autoCapitalize="none" keyboardType="email-address" />
+            <TextInput style={styles.profileInput} placeholder="Password" value={editUser?.password} onChangeText={t => setEditUser((u: any) => ({ ...u, password: t }))} secureTextEntry />
+            <TextInput style={styles.profileInput} placeholder="Contact Number" value={editUser?.contact} onChangeText={t => setEditUser((u: any) => ({ ...u, contact: t }))} keyboardType="phone-pad" />
+            <TextInput style={styles.profileInput} placeholder="Department" value={editUser?.department} onChangeText={t => setEditUser((u: any) => ({ ...u, department: t }))} />
+            <TextInput style={styles.profileInput} placeholder="Badge (optional)" value={editUser?.badge} onChangeText={t => setEditUser((u: any) => ({ ...u, badge: t }))} />
             <View style={{ flexDirection: 'row', marginBottom: 12 }}>
               {['responder', 'admin', 'user'].map(role => (
-                <TouchableOpacity key={role} style={[styles.roleBadge, { backgroundColor: editUser?.role === role ? '#a084e8' : '#e0e0e0', marginRight: 8 }]} onPress={() => setEditUser(u => ({ ...u, role }))}>
+                <TouchableOpacity key={role} style={[styles.roleBadge, { backgroundColor: editUser?.role === role ? '#a084e8' : '#e0e0e0', marginRight: 8 }]} onPress={() => setEditUser((u: any) => ({ ...u, role }))}>
                   <Text style={{ color: editUser?.role === role ? '#fff' : '#222', fontWeight: 'bold' }}>{role}</Text>
                 </TouchableOpacity>
               ))}
@@ -260,26 +275,95 @@ export default function AdminDashboard() {
       {tab === 'reports' && (
         <ScrollView style={{ flex: 1, padding: 16 }}>
           <Text style={styles.sectionTitle}>All Submitted Reports</Text>
+          <Text style={styles.sectionDesc}>Complete overview of all emergency reports submitted to the system</Text>
           {allReports.length === 0 ? (
             <Text style={{ color: '#888', textAlign: 'center', marginTop: 20 }}>No reports submitted yet.</Text>
-          ) : allReports.map((report: any) => (
-            <View key={report.id} style={{ backgroundColor: '#f6f8fa', borderRadius: 10, padding: 12, marginBottom: 10 }}>
-              <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>{report.title || 'Untitled Report'}</Text>
-              <Text style={{ color: '#555', marginBottom: 2 }}>{report.description}</Text>
+          ) : sortReportsByDate(allReports).map((report: any) => (
+            <View key={report.id} style={styles.reportCard}>
+              {/* Report Header */}
+              <View style={styles.reportHeader}>
+                <Text style={styles.reportTitle}>
+                  {report.chiefComplaint || report.title || 'Emergency Report'}
+                </Text>
+                <View style={[styles.statusBadge, { backgroundColor: report.status === 'Completed' ? '#4CAF50' : '#FF9800' }]}>
+                  <Text style={styles.statusBadgeText}>{report.status || 'Awaiting Assessment'}</Text>
+                </View>
+              </View>
+              
+              {/* Incident Photo */}
               {report.photo && (
-                <Image source={{ uri: report.photo }} style={{ width: '100%', height: 160, borderRadius: 8, marginBottom: 8 }} resizeMode="cover" />
+                <Image source={{ uri: report.photo }} style={styles.reportImage} resizeMode="cover" />
               )}
-              <Text style={{ color: '#888', fontSize: 12, marginBottom: 2 }}>Status: {report.status}</Text>
-              <Text style={{ color: '#888', fontSize: 12, marginBottom: 2 }}>Submitted: {new Date(report.createdAt).toLocaleString()}</Text>
-              {report.responders && report.responders.length > 0 && (
-                <Text style={{ color: '#377DFF', fontSize: 12, marginBottom: 2 }}>Sent to: {report.responders.join(', ')}</Text>
-              )}
+              
+              {/* User Information */}
+              <View style={styles.infoSection}>
+                <Text style={styles.infoSectionTitle}>👤 Reporter Information</Text>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Full Name:</Text>
+                  <Text style={styles.infoValue}>{report.fullName || 'Anonymous'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Contact Number:</Text>
+                  <Text style={styles.infoValue}>{report.contactNumber || 'N/A'}</Text>
+                </View>
+              </View>
+              
+              {/* Incident Details */}
+              <View style={styles.infoSection}>
+                <Text style={styles.infoSectionTitle}>🚨 Incident Details</Text>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Chief Complaint:</Text>
+                  <Text style={styles.infoValue}>{report.chiefComplaint || 'N/A'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Person Involved:</Text>
+                  <Text style={styles.infoValue}>{report.personInvolved || 'N/A'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Description:</Text>
+                  <Text style={styles.infoValue}>{report.description || 'No additional details provided'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Priority:</Text>
+                  <Text style={styles.infoValue}>{report.priority || 'Medium'}</Text>
+                </View>
+              </View>
+              
+              {/* Location Information */}
+              <View style={styles.infoSection}>
+                <Text style={styles.infoSectionTitle}>📍 Location Information</Text>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Coordinates:</Text>
+                  <Text style={styles.infoValue}>
+                    {report.location?.lat || report.location?.coords?.latitude}, {report.location?.lng || report.location?.coords?.longitude}
+                  </Text>
+                </View>
+              </View>
+              
+              {/* System Information */}
+              <View style={styles.infoSection}>
+                <Text style={styles.infoSectionTitle}>📊 System Information</Text>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Submitted:</Text>
+                  <Text style={styles.infoValue}>
+                    {report.createdAt ? new Date(report.createdAt).toLocaleString() : 'N/A'}
+                  </Text>
+                </View>
+                {report.responders && report.responders.length > 0 && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Assigned Responders:</Text>
+                    <Text style={styles.infoValue}>{report.responders.join(', ')}</Text>
+                  </View>
+                )}
+              </View>
             </View>
           ))}
         </ScrollView>
       )}
       {tab === 'analytics' && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text>System Analytics (Coming Soon)</Text></View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text>System Analytics (Coming Soon)</Text>
+        </View>
       )}
       {/* Mobile Burger Menu Modal */}
       <DropdownMenu
@@ -448,5 +532,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     marginBottom: 15,
     backgroundColor: '#f5f5f5',
+  },
+  reportCard: {
+    backgroundColor: '#f6f8fa',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    elevation: 2,
+  },
+  reportHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  reportTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#222',
+    flex: 1,
+    marginRight: 10,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusBadgeText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  reportImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  infoSection: {
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  infoSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#555',
+    marginBottom: 5,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 3,
+  },
+  infoLabel: {
+    fontSize: 13,
+    color: '#888',
+    fontWeight: 'bold',
+  },
+  infoValue: {
+    fontSize: 13,
+    color: '#222',
+    flex: 1,
+    textAlign: 'right',
   },
 }); 

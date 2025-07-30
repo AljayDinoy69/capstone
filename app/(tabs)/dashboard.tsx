@@ -26,7 +26,8 @@ export default function DashboardScreen() {
   const [allReports, setAllReports] = useState<any[]>([]);
   const [editReportModalVisible, setEditReportModalVisible] = useState(false);
   const [editingReport, setEditingReport] = useState<any>(null);
-  const [editTitle, setEditTitle] = useState('');
+  const [editChiefComplaint, setEditChiefComplaint] = useState('');
+  const [editPersonInvolved, setEditPersonInvolved] = useState('');
   const [editDescription, setEditDescription] = useState('');
 
   // Load user's submitted reports
@@ -46,33 +47,40 @@ export default function DashboardScreen() {
     setAllReports(allReportsStr ? JSON.parse(allReportsStr) : []);
   };
 
+  // Sort reports from newest to oldest
+  const sortReportsByDate = (reports: any[]) => {
+    return reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  };
+
   // Edit report handler
   const openEditReportModal = (report: any) => {
     setEditingReport(report);
-    setEditTitle(report.title || '');
+    setEditChiefComplaint(report.chiefComplaint || '');
+    setEditPersonInvolved(report.personInvolved || '');
     setEditDescription(report.description || '');
     setEditReportModalVisible(true);
   };
   const closeEditReportModal = () => {
     setEditReportModalVisible(false);
     setEditingReport(null);
-    setEditTitle('');
+    setEditChiefComplaint('');
+    setEditPersonInvolved('');
     setEditDescription('');
   };
   const saveEditedReport = async () => {
     if (!editingReport) return;
     // Update in user reports
-    const userKey = `user-reports-${user.email}`;
+    const userKey = `user-reports-${user?.email}`;
     const userReportsStr = await AsyncStorage.getItem(userKey);
     const userReports = userReportsStr ? JSON.parse(userReportsStr) : [];
-    const updatedUserReports = userReports.map((r: any) => r.id === editingReport.id ? { ...r, title: editTitle, description: editDescription } : r);
+    const updatedUserReports = userReports.map((r: any) => r.id === editingReport.id ? { ...r, chiefComplaint: editChiefComplaint, personInvolved: editPersonInvolved, description: editDescription } : r);
     await AsyncStorage.setItem(userKey, JSON.stringify(updatedUserReports));
     setMyReports(updatedUserReports);
     // Update in all-reports
     const allReportsKey = 'all-reports';
     const allReportsStr = await AsyncStorage.getItem(allReportsKey);
     const allReports = allReportsStr ? JSON.parse(allReportsStr) : [];
-    const updatedAllReports = allReports.map((r: any) => r.id === editingReport.id ? { ...r, title: editTitle, description: editDescription } : r);
+    const updatedAllReports = allReports.map((r: any) => r.id === editingReport.id ? { ...r, chiefComplaint: editChiefComplaint, personInvolved: editPersonInvolved, description: editDescription } : r);
     await AsyncStorage.setItem(allReportsKey, JSON.stringify(updatedAllReports));
     // Update in responder-reports
     if (editingReport.responders && editingReport.responders.length > 0) {
@@ -80,7 +88,7 @@ export default function DashboardScreen() {
         const responderKey = `responder-reports-${responderEmail}`;
         const responderReportsStr = await AsyncStorage.getItem(responderKey);
         const responderReports = responderReportsStr ? JSON.parse(responderReportsStr) : [];
-        const updatedResponderReports = responderReports.map((r: any) => r.id === editingReport.id ? { ...r, title: editTitle, description: editDescription } : r);
+        const updatedResponderReports = responderReports.map((r: any) => r.id === editingReport.id ? { ...r, chiefComplaint: editChiefComplaint, personInvolved: editPersonInvolved, description: editDescription } : r);
         await AsyncStorage.setItem(responderKey, JSON.stringify(updatedResponderReports));
       }
     }
@@ -222,8 +230,20 @@ export default function DashboardScreen() {
                 <Text style={{ color: '#888', textAlign: 'center', marginTop: 20 }}>No reports submitted yet.</Text>
               ) : myReports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((report: any) => (
                 <View key={report.id} style={{ backgroundColor: '#f6f8fa', borderRadius: 10, padding: 12, marginBottom: 10 }}>
-                  <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>{report.title || 'Untitled Report'}</Text>
+                  <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
+                    {report.chiefComplaint || report.title || 'Emergency Report'}
+                  </Text>
                   <Text style={{ color: '#555', marginBottom: 2 }}>{report.description}</Text>
+                  
+                  {/* User Information */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={{ color: '#888', fontSize: 12 }}>👤 Reporter: {report.fullName || 'Anonymous'}</Text>
+                    <Text style={{ color: '#888', fontSize: 12 }}>📞 Contact: {report.contactNumber || 'N/A'}</Text>
+                  </View>
+                  
+                  {/* Person Involved */}
+                  <Text style={{ color: '#888', fontSize: 12, marginBottom: 4 }}>👥 Person Involved: {report.personInvolved || 'N/A'}</Text>
+                  
                   {report.photo && (
                     <Image source={{ uri: report.photo }} style={{ width: '100%', height: 160, borderRadius: 8, marginBottom: 8 }} resizeMode="cover" />
                   )}
@@ -257,9 +277,12 @@ export default function DashboardScreen() {
             <ScrollView style={{ width: '100%' }}>
               {allReports.length === 0 ? (
                 <Text style={{ color: '#888', textAlign: 'center', marginTop: 20 }}>No reports submitted yet.</Text>
-              ) : allReports.map((report: any) => (
+              ) : sortReportsByDate(allReports).map((report: any) => (
                 <View key={report.id} style={{ backgroundColor: '#f6f8fa', borderRadius: 10, padding: 12, marginBottom: 10 }}>
-                  <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>{report.title || 'Untitled Report'}</Text>
+                  <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
+                    {report.chiefComplaint || report.title || 'Emergency Report'}
+                  </Text>
+                  <Text style={{ color: '#888', fontSize: 13, marginBottom: 2 }}>👥 Person Involved: {report.personInvolved || 'N/A'}</Text>
                   <Text style={{ color: '#888', fontSize: 13, marginBottom: 2 }}>Status: {report.status}</Text>
                   <Text style={{ color: '#888', fontSize: 13, marginBottom: 2 }}>Submitted: {report.createdAt ? new Date(report.createdAt).toLocaleString() : 'N/A'}</Text>
                 </View>
@@ -277,9 +300,15 @@ export default function DashboardScreen() {
             <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>Edit Report</Text>
             <TextInput
               style={{ borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 16 }}
-              placeholder="Title"
-              value={editTitle}
-              onChangeText={setEditTitle}
+              placeholder="Chief Complaint"
+              value={editChiefComplaint}
+              onChangeText={setEditChiefComplaint}
+            />
+            <TextInput
+              style={{ borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 16 }}
+              placeholder="Person Involved"
+              value={editPersonInvolved}
+              onChangeText={setEditPersonInvolved}
             />
             <TextInput
               style={{ borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 16, minHeight: 60 }}

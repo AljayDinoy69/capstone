@@ -1,13 +1,10 @@
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useUser } from '@/components/UserContext';
-import { Colors } from '@/constants/Colors';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -21,6 +18,8 @@ export default function HomeScreen() {
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
+  const [signUpContact, setSignUpContact] = useState('');
+  
   // Helper for emergency call
   const handleCall = (number: string) => {
     Linking.openURL(`tel:${number}`);
@@ -36,84 +35,162 @@ export default function HomeScreen() {
     setSignUpEmail('');
     setSignUpPassword('');
     setSignUpConfirmPassword('');
+    setSignUpContact('');
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.light.background }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
-        {/* Gradient Header */}
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* Hero Section with Circular Report Button */}
         <LinearGradient
-          colors={["#377DFF", "#FF3B3B"]}
+          colors={["#1E3A8A", "#DC2626"]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.header}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroSection}
         >
-          <ThemedText type="title" style={styles.headerTitle}>Emergency Response{"\n"}Hub</ThemedText>
-          <ThemedText style={styles.headerSubtitle}>
-            Report emergencies instantly. Get help when you need it most.
-          </ThemedText>
-          <TouchableOpacity style={styles.emergencyBtn} onPress={() => router.push('./report')}>
-            <ThemedText style={styles.emergencyBtnText}>🚨 Report Emergency Now</ThemedText>
-          </TouchableOpacity>
-          <ThemedText style={styles.headerSubnote}>
-            No account required · Reports submitted instantly
-          </ThemedText>
+          <View style={styles.heroContent}>
+            <ThemedText style={styles.heroTitle}>
+              Emergency Response Hub
+            </ThemedText>
+            <ThemedText style={styles.heroSubtitle}>
+              Report emergencies instantly. Get help when you need it most.
+            </ThemedText>
+            
+            {/* Circular Report Button with Logo */}
+            <TouchableOpacity 
+              style={styles.circularReportBtn} 
+              onPress={() => router.push('./report')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.circularBtnInner}>
+                <FontAwesome name="exclamation-triangle" size={32} color="#DC2626" />
+                <ThemedText style={styles.circularBtnText}>REPORT</ThemedText>
+                <ThemedText style={styles.circularBtnSubtext}>EMERGENCY</ThemedText>
+              </View>
+            </TouchableOpacity>
+            
+            <ThemedText style={styles.heroNote}>
+              No account required • Reports submitted instantly
+            </ThemedText>
+          </View>
         </LinearGradient>
 
-        {/* Feature Cards */}
-        <View style={styles.cardRow}>
-          <ThemedView style={styles.featureCard}>
-            <IconSymbol name="paperplane.fill" size={32} color="#377DFF" style={styles.cardIcon} />
-            <ThemedText type="subtitle" style={styles.cardTitle}>Instant Reporting</ThemedText>
-            <ThemedText style={styles.cardDesc}>Report emergencies with photos and location, without an account, in seconds.</ThemedText>
-          </ThemedView>
-          <ThemedView style={styles.featureCard}>
-            <IconSymbol name="chevron.left.forwardslash.chevron.right" size={32} color="#FF3B3B" style={styles.cardIcon} />
-            <ThemedText type="subtitle" style={styles.cardTitle}>Coordinated Response</ThemedText>
-            <ThemedText style={styles.cardDesc}>Emergency responders receive real-time information and location for faster response.</ThemedText>
-          </ThemedView>
-          <ThemedView style={styles.featureCard}>
-            <IconSymbol name="chevron.right" size={32} color="#00B67A" style={styles.cardIcon} />
-            <ThemedText type="subtitle" style={styles.cardTitle}>Precise Location</ThemedText>
-            <ThemedText style={styles.cardDesc}>GPS coordinates and address information help responders find you quickly.</ThemedText>
-          </ThemedView>
+        {/* Join Network Section */}
+        <View style={styles.joinSection}>
+          <ThemedText style={styles.sectionTitle}>Join the Emergency Response Network</ThemedText>
+          <ThemedText style={styles.joinDesc}>
+            Sign up for an account to track your reports and access additional features.
+          </ThemedText>
+          <View style={styles.joinButtons}>
+            <TouchableOpacity 
+              style={[styles.joinBtn, styles.loginBtn]} 
+              onPress={() => setShowLogin(true)}
+              activeOpacity={0.8}
+            >
+              <ThemedText style={styles.joinBtnText}>Log In</ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.joinBtn, styles.signupBtn]} 
+              onPress={() => setShowSignUp(true)}
+              activeOpacity={0.8}
+            >
+              <ThemedText style={styles.joinBtnText}>Sign Up</ThemedText>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Emergency Contacts */}
-        <ThemedView style={styles.contactsSection}>
-          <ThemedText type="subtitle" style={styles.contactsTitle}>📞 Emergency Contacts</ThemedText>
-          <View style={styles.contactsRow}>
-            <TouchableOpacity style={[styles.contactCard, { borderColor: '#FF3B3B' }]} onPress={() => handleCall('911')}>
-              <ThemedText style={[styles.contactType, { color: '#FF3B3B' }]}>Life-Threatening Emergency</ThemedText>
+        {/* Features Section */}
+        <View style={styles.featuresSection}>
+          <ThemedText style={styles.sectionTitle}>How It Works</ThemedText>
+          <View style={styles.featuresGrid}>
+            <View style={styles.featureCard}>
+              <View style={styles.featureIconContainer}>
+                <FontAwesome name="camera" size={24} color="#1E3A8A" />
+              </View>
+              <ThemedText style={styles.featureTitle}>Instant Reporting</ThemedText>
+              <ThemedText style={styles.featureDesc}>
+                Report emergencies with photos and location, without an account, in seconds.
+              </ThemedText>
+            </View>
+            
+            <View style={styles.featureCard}>
+              <View style={styles.featureIconContainer}>
+                <FontAwesome name="users" size={24} color="#DC2626" />
+              </View>
+              <ThemedText style={styles.featureTitle}>Coordinated Response</ThemedText>
+              <ThemedText style={styles.featureDesc}>
+                Emergency responders receive real-time information and location for faster response.
+              </ThemedText>
+            </View>
+            
+            <View style={styles.featureCard}>
+              <View style={styles.featureIconContainer}>
+                <FontAwesome name="map-marker" size={24} color="#059669" />
+              </View>
+              <ThemedText style={styles.featureTitle}>Precise Location</ThemedText>
+              <ThemedText style={styles.featureDesc}>
+                GPS coordinates and address information help responders find you quickly.
+              </ThemedText>
+            </View>
+          </View>
+        </View>
+
+        {/* Emergency Contacts Section */}
+        <View style={styles.contactsSection}>
+          <ThemedText style={styles.sectionTitle}>Emergency Contacts</ThemedText>
+          <View style={styles.contactsGrid}>
+            <TouchableOpacity 
+              style={[styles.contactCard, styles.emergencyContact]} 
+              onPress={() => handleCall('911')}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="phone" size={20} color="#DC2626" />
+              <ThemedText style={styles.contactType}>Life-Threatening Emergency</ThemedText>
               <ThemedText style={styles.contactNumber}>911</ThemedText>
               <ThemedText style={styles.contactDesc}>Police, Fire, Medical</ThemedText>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.contactCard, { borderColor: '#377DFF' }]} onPress={() => handleCall('1-800-222-1222')}>
-              <ThemedText style={[styles.contactType, { color: '#377DFF' }]}>Poison Control</ThemedText>
+            
+            <TouchableOpacity 
+              style={[styles.contactCard, styles.poisonContact]} 
+              onPress={() => handleCall('1-800-222-1222')}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="phone" size={20} color="#1E3A8A" />
+              <ThemedText style={styles.contactType}>Poison Control</ThemedText>
               <ThemedText style={styles.contactNumber}>1-800-222-1222</ThemedText>
               <ThemedText style={styles.contactDesc}>24/7 Poison Help</ThemedText>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.contactCard, { borderColor: '#00B67A' }]} onPress={() => handleCall('5551234567')}>
-              <ThemedText style={[styles.contactType, { color: '#00B67A' }]}>Non-Emergency</ThemedText>
+            
+            <TouchableOpacity 
+              style={[styles.contactCard, styles.nonEmergencyContact]} 
+              onPress={() => handleCall('5551234567')}
+              activeOpacity={0.7}
+            >
+              <FontAwesome name="phone" size={20} color="#059669" />
+              <ThemedText style={styles.contactType}>Non-Emergency</ThemedText>
               <ThemedText style={styles.contactNumber}>(555) 123-4567</ThemedText>
               <ThemedText style={styles.contactDesc}>General Services</ThemedText>
             </TouchableOpacity>
           </View>
-        </ThemedView>
+        </View>
+      </ScrollView>
 
-        {/* Join Network Section */}
-        <ThemedView style={styles.joinSection}>
-          <ThemedText type="subtitle" style={styles.joinTitle}>Join the Emergency Response Network</ThemedText>
-          <ThemedText style={styles.joinDesc}>Sign up for an account to track your reports and access additional features.</ThemedText>
-          <View style={styles.joinBtnRow}>
-            <TouchableOpacity style={[styles.joinBtn, { backgroundColor: '#377DFF' }]} onPress={() => setShowLogin(true)}>
-              <ThemedText style={styles.joinBtnText}>Log In</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.joinBtn, { backgroundColor: '#00B67A' }]} onPress={() => setShowSignUp(true)}>
-              <ThemedText style={styles.joinBtnText}>Sign Up</ThemedText>
-            </TouchableOpacity>
-          </View>
-        </ThemedView>
+      {/* Social Media Footer */}
+      <View style={styles.footer}>
+        <TouchableOpacity onPress={() => Linking.openURL('https://facebook.com')} style={styles.footerIcon}>
+          <FontAwesome name="facebook" size={24} color="#4267B2" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => Linking.openURL('https://twitter.com')} style={styles.footerIcon}>
+          <FontAwesome name="twitter" size={24} color="#1DA1F2" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => Linking.openURL('https://youtube.com')} style={styles.footerIcon}>
+          <FontAwesome name="youtube" size={24} color="#FF0000" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com')} style={styles.footerIcon}>
+          <FontAwesome name="instagram" size={24} color="#E4405F" />
+        </TouchableOpacity>
+      </View>
+
       {/* Login Modal */}
       <Modal visible={showLogin} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
@@ -121,10 +198,11 @@ export default function HomeScreen() {
             <TouchableOpacity style={styles.modalClose} onPress={() => { setShowLogin(false); clearLogin(); }}>
               <Text style={styles.modalCloseText}>✕</Text>
             </TouchableOpacity>
-            <ThemedText type="title" style={{ textAlign: 'center', marginBottom: 12 }}>Log In</ThemedText>
+            <ThemedText style={styles.modalTitle}>Log In</ThemedText>
             <TextInput
               style={styles.modalInput}
               placeholder="Email"
+              placeholderTextColor="#666"
               value={loginEmail}
               onChangeText={setLoginEmail}
               autoCapitalize="none"
@@ -133,32 +211,37 @@ export default function HomeScreen() {
             <TextInput
               style={styles.modalInput}
               placeholder="Password"
+              placeholderTextColor="#666"
               value={loginPassword}
               onChangeText={setLoginPassword}
               secureTextEntry
             />
-            <TouchableOpacity style={[styles.modalActionBtn, { backgroundColor: '#377DFF' }]} onPress={() => {
-              const found = users.find(u => u.email === loginEmail && u.password === loginPassword);
-              if (found) {
-                setUser(found);
-                setShowLogin(false);
-                clearLogin();
-                if (found.role === 'admin') {
-                  router.push('/dashboard-admin');
-                } else if (found.role === 'responder') {
-                  router.push('/dashboard-responder');
+            <TouchableOpacity 
+              style={[styles.modalActionBtn, { backgroundColor: '#1E3A8A' }]} 
+              onPress={() => {
+                const found = users.find(u => u.email === loginEmail && u.password === loginPassword);
+                if (found) {
+                  setUser(found);
+                  setShowLogin(false);
+                  clearLogin();
+                  if (found.role === 'admin') {
+                    router.push('/dashboard-admin');
+                  } else if (found.role === 'responder') {
+                    router.push('/dashboard-responder');
+                  } else {
+                    router.push('/dashboard');
+                  }
                 } else {
-                  router.push('/dashboard');
+                  alert('Invalid email or password');
                 }
-              } else {
-                alert('Invalid email or password');
-              }
-            }}>
+              }}
+            >
               <ThemedText style={styles.modalActionBtnText}>Log In</ThemedText>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
       {/* Sign Up Modal */}
       <Modal visible={showSignUp} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
@@ -166,22 +249,25 @@ export default function HomeScreen() {
             <TouchableOpacity style={styles.modalClose} onPress={() => { setShowSignUp(false); clearSignUp(); }}>
               <Text style={styles.modalCloseText}>✕</Text>
             </TouchableOpacity>
-            <ThemedText type="title" style={{ textAlign: 'center', marginBottom: 12 }}>Sign Up</ThemedText>
+            <ThemedText style={styles.modalTitle}>Sign Up</ThemedText>
             <TextInput
               style={styles.modalInput}
               placeholder="First Name"
+              placeholderTextColor="#666"
               value={signUpFirstName}
               onChangeText={setSignUpFirstName}
             />
             <TextInput
               style={styles.modalInput}
               placeholder="Last Name"
+              placeholderTextColor="#666"
               value={signUpLastName}
               onChangeText={setSignUpLastName}
             />
             <TextInput
               style={styles.modalInput}
               placeholder="Email"
+              placeholderTextColor="#666"
               value={signUpEmail}
               onChangeText={setSignUpEmail}
               autoCapitalize="none"
@@ -189,7 +275,16 @@ export default function HomeScreen() {
             />
             <TextInput
               style={styles.modalInput}
+              placeholder="Contact Number"
+              placeholderTextColor="#666"
+              value={signUpContact}
+              onChangeText={setSignUpContact}
+              keyboardType="phone-pad"
+            />
+            <TextInput
+              style={styles.modalInput}
               placeholder="Password"
+              placeholderTextColor="#666"
               value={signUpPassword}
               onChangeText={setSignUpPassword}
               secureTextEntry
@@ -197,277 +292,335 @@ export default function HomeScreen() {
             <TextInput
               style={styles.modalInput}
               placeholder="Confirm Password"
+              placeholderTextColor="#666"
               value={signUpConfirmPassword}
               onChangeText={setSignUpConfirmPassword}
               secureTextEntry
             />
-            <TouchableOpacity style={[styles.modalActionBtn, { backgroundColor: '#00B67A' }]} onPress={async () => {
-              const newUser = {
-                name: `${signUpFirstName} ${signUpLastName}`.trim(),
-                email: signUpEmail,
-                contact: 'N/A',
-                password: signUpPassword,
-                role: 'user',
-              };
-              await addUser(newUser);
-              setUser(newUser);
-              setShowSignUp(false);
-              clearSignUp();
-              router.push('/dashboard');
-            }}>
+            <TouchableOpacity 
+              style={[styles.modalActionBtn, { backgroundColor: '#059669' }]} 
+              onPress={async () => {
+                const newUser = {
+                  name: `${signUpFirstName} ${signUpLastName}`.trim(),
+                  email: signUpEmail,
+                  contact: signUpContact,
+                  password: signUpPassword,
+                  role: 'user',
+                };
+                await addUser(newUser);
+                setUser(newUser);
+                setShowSignUp(false);
+                clearSignUp();
+                router.push('/dashboard');
+              }}
+            >
               <ThemedText style={styles.modalActionBtnText}>Sign Up</ThemedText>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-      </ScrollView>
-      {/* Social Media Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity onPress={() => Linking.openURL('https://facebook.com')} style={styles.footerIcon}>
-          <FontAwesome name="facebook" size={28} color="#4267B2" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => Linking.openURL('https://twitter.com')} style={styles.footerIcon}>
-          <FontAwesome name="twitter" size={28} color="#1DA1F2" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => Linking.openURL('https://youtube.com')} style={styles.footerIcon}>
-          <FontAwesome name="youtube" size={28} color="#FF0000" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com')} style={styles.footerIcon}>
-          <FontAwesome name="instagram" size={28} color="#FF0000" />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingTop: 48,
-    paddingBottom: 32,
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  heroSection: {
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 40,
     paddingHorizontal: 20,
     alignItems: 'center',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    minHeight: 400,
   },
-  headerTitle: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 28,
+  heroContent: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    color: '#fff',
     textAlign: 'center',
-    fontSize: 15,
     marginBottom: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  emergencyBtn: {
-    backgroundColor: '#FF3B3B',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    marginBottom: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  emergencyBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  heroSubtitle: {
+    color: '#FFFFFF',
     fontSize: 16,
     textAlign: 'center',
+    marginBottom: 40,
+    opacity: 0.95,
+    lineHeight: 22,
   },
-  headerSubnote: {
-    color: '#fff',
-    fontSize: 12,
-    marginTop: 2,
-    textAlign: 'center',
-    opacity: 0.85,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: -32,
-    marginHorizontal: 12,
-    marginBottom: 16,
-    gap: 8,
-  },
-  featureCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 16,
+  circularReportBtn: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 24,
     shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 4,
-    elevation: 1,
-    marginHorizontal: 2,
-    minWidth: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  cardIcon: {
-    marginBottom: 8,
-  },
-  cardTitle: {
-    fontSize: 16,
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  cardDesc: {
-    fontSize: 13,
-    color: '#444',
-    textAlign: 'center',
-  },
-  contactsSection: {
-    backgroundColor: '#f7f7f7',
-    borderRadius: 14,
-    marginHorizontal: 12,
-    marginBottom: 18,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  contactsTitle: {
-    marginBottom: 8,
-    fontSize: 17,
-  },
-  contactsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  contactCard: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderRadius: 10,
-    padding: 10,
+  circularBtnInner: {
     alignItems: 'center',
-    marginHorizontal: 2,
-    backgroundColor: '#fff',
+    justifyContent: 'center',
   },
-  contactType: {
+  circularBtnText: {
+    color: '#DC2626',
+    fontSize: 14,
     fontWeight: 'bold',
-    fontSize: 13,
-    marginBottom: 2,
+    marginTop: 4,
   },
-  contactNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  contactDesc: {
+  circularBtnSubtext: {
+    color: '#DC2626',
     fontSize: 12,
-    color: '#666',
+    fontWeight: '600',
+  },
+  heroNote: {
+    color: '#FFFFFF',
+    fontSize: 14,
     textAlign: 'center',
+    opacity: 0.9,
   },
   joinSection: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    marginHorizontal: 12,
-    marginBottom: 24,
-    padding: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 30,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
   },
-  joinTitle: {
-    fontSize: 17,
-    marginBottom: 4,
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F2937',
     textAlign: 'center',
+    marginBottom: 24,
   },
   joinDesc: {
-    fontSize: 13,
-    color: '#444',
-    marginBottom: 12,
+    fontSize: 16,
+    color: '#6B7280',
     textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
   },
-  joinBtnRow: {
+  joinButtons: {
     flexDirection: 'row',
     gap: 12,
     width: '100%',
-    justifyContent: 'center',
   },
   joinBtn: {
     flex: 1,
-    borderRadius: 8,
-    paddingVertical: 12,
-    marginHorizontal: 4,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  loginBtn: {
+    backgroundColor: '#1E3A8A',
+  },
+  signupBtn: {
+    backgroundColor: '#059669',
   },
   joinBtnText: {
-    color: '#fff',
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: 'bold',
-    fontSize: 15,
+  },
+  featuresSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 30,
+    backgroundColor: '#FFFFFF',
+    marginTop: -20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  featuresGrid: {
+    gap: 16,
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+  },
+  featureCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    flex: Platform.OS === 'web' ? 1 : undefined,
+  },
+  featureIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  featureTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  featureDesc: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  contactsSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 30,
+    backgroundColor: '#F8FAFC',
+  },
+  contactsGrid: {
+    gap: 12,
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+  },
+  contactCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    flex: Platform.OS === 'web' ? 1 : undefined,
+  },
+  emergencyContact: {
+    borderColor: '#DC2626',
+  },
+  poisonContact: {
+    borderColor: '#1E3A8A',
+  },
+  nonEmergencyContact: {
+    borderColor: '#059669',
+  },
+  contactType: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  contactNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  contactDesc: {
+    fontSize: 14,
+    color: '#6B7280',
     textAlign: 'center',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderColor: '#eee',
-    backgroundColor: '#fff',
+    borderColor: '#E5E7EB',
   },
   footerIcon: {
-    marginHorizontal: 18,
+    marginHorizontal: 16,
+    padding: 8,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
-    width: 320,
-    backgroundColor: '#fff',
-    borderRadius: 14,
+    width: '85%',
+    maxWidth: 350,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     padding: 24,
     alignItems: 'stretch',
     shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
-    position: 'relative',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalClose: {
     position: 'absolute',
-    right: 12,
-    top: 12,
+    right: 16,
+    top: 16,
     zIndex: 2,
     padding: 4,
   },
   modalCloseText: {
-    fontSize: 22,
-    color: '#FF3B3B',
+    fontSize: 24,
+    color: '#DC2626',
     fontWeight: 'bold',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 20,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 10,
+    borderColor: '#D1D5DB',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     fontSize: 16,
-    backgroundColor: '#fafbfc',
+    backgroundColor: '#F9FAFB',
+    color: '#1F2937',
   },
   modalActionBtn: {
-    width: '100%',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingVertical: 16,
-    marginTop: 18,
+    marginTop: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   modalActionBtnText: {
-    color: '#fff',
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: 'bold',
-    fontSize: 17,
-    textAlign: 'center',
   },
 });

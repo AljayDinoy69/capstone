@@ -6,13 +6,12 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function DashboardReportScreen() {
   const router = useRouter();
   const { users } = useUser();
   const responders = users.filter(u => u.role === 'responder');
-  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoLoading, setPhotoLoading] = useState(false);
@@ -23,6 +22,10 @@ export default function DashboardReportScreen() {
   const [senderName, setSenderName] = useState('');
   const [senderEmail, setSenderEmail] = useState('');
   const [senderContact, setSenderContact] = useState('');
+  const [chiefComplaint, setChiefComplaint] = useState('');
+  const [showComplaintDropdown, setShowComplaintDropdown] = useState(false);
+  const [personInvolved, setPersonInvolved] = useState('');
+  const [showPersonDropdown, setShowPersonDropdown] = useState(false);
   const { user } = useUser();
 
   useEffect(() => {
@@ -46,6 +49,41 @@ export default function DashboardReportScreen() {
       setLocationStatus('Location Confirmed');
     })();
   }, []);
+
+  // Chief Complaint options
+  const complaintOptions = [
+    'Medical Emergency',
+    'Traffic Accident',
+    'Fire Emergency',
+    'Crime in Progress',
+    'Natural Disaster',
+    'Gas Leak',
+    'Electrical Hazard',
+    'Water Emergency',
+    'Structural Damage',
+    'Chemical Spill',
+    'Animal Attack',
+    'Drowning',
+    'Cardiac Arrest',
+    'Severe Bleeding',
+    'Other Emergency'
+  ];
+
+  // Person Involved options
+  const personInvolvedOptions = [
+    '1 Person',
+    '2 People',
+    '3 People',
+    '4 People',
+    '5 People',
+    '6-10 People',
+    '11-20 People',
+    '21-50 People',
+    '51-100 People',
+    '100+ People',
+    'Unknown',
+    'Other'
+  ];
 
   const handleCapturePhoto = async () => {
     if (photoLoading) return;
@@ -97,15 +135,18 @@ export default function DashboardReportScreen() {
     );
   };
 
-  const canSubmit = senderName && senderEmail && senderContact && photo && selectedResponders.length > 0 && location;
+  const canSubmit = senderName && senderEmail && senderContact && chiefComplaint && personInvolved && photo && selectedResponders.length > 0 && location;
   const clearForm = () => {
-    setTitle('');
     setDescription('');
     setPhoto(null);
     setLocation(null);
     setLocationStatus('');
     setSelectedResponders([]);
     setSubmitting(false);
+    setChiefComplaint('');
+    setShowComplaintDropdown(false);
+    setPersonInvolved('');
+    setShowPersonDropdown(false);
     setSenderName(user?.name || '');
     setSenderEmail(user?.email || '');
     setSenderContact(user?.contact || '');
@@ -116,7 +157,8 @@ export default function DashboardReportScreen() {
     try {
       const report = {
         id: Date.now().toString(),
-        title,
+        chiefComplaint,
+        personInvolved,
         description,
         photo,
         location,
@@ -153,7 +195,7 @@ export default function DashboardReportScreen() {
       setTimeout(() => {
         setSubmitting(false);
         clearForm();
-        Alert.alert('Report Submitted', `Report submitted with sender details:\nName: ${senderName}\nEmail: ${senderEmail}\nContact: ${senderContact}`);
+        Alert.alert('Report Submitted', `Report submitted with sender details:\nName: ${senderName}\nEmail: ${senderEmail}\nContact: ${senderContact}\nChief Complaint: ${chiefComplaint}\nPerson Involved: ${personInvolved}`);
         router.push('/dashboard');
         console.log('Report submitted with sender details:', { senderName, senderEmail, senderContact });
       }, 1200);
@@ -199,13 +241,24 @@ export default function DashboardReportScreen() {
           />
           <ThemedText type="title" style={{ color: '#FF3B3B', textAlign: 'center', marginBottom: 4 }}>⚠️ Emergency Report</ThemedText>
           <ThemedText style={{ textAlign: 'center', marginBottom: 8 }}>Report an emergency incident – No account required</ThemedText>
-          <ThemedText style={styles.sectionLabel}>Incident Title (optional)</ThemedText>
-          <TextInput
+          <ThemedText style={styles.sectionLabel}>Chief Complaint <Text style={{ color: '#FF3B3B' }}>*</Text></ThemedText>
+          <TouchableOpacity
             style={styles.input}
-            placeholder="Brief description of the incident"
-            value={title}
-            onChangeText={setTitle}
-          />
+            onPress={() => setShowComplaintDropdown(true)}
+          >
+            <Text style={{ color: chiefComplaint ? '#333' : '#888' }}>
+              {chiefComplaint || 'Select chief complaint'}
+            </Text>
+          </TouchableOpacity>
+          <ThemedText style={styles.sectionLabel}>Person Involved <Text style={{ color: '#FF3B3B' }}>*</Text></ThemedText>
+          <TouchableOpacity
+            style={styles.input}
+            onPress={() => setShowPersonDropdown(true)}
+          >
+            <Text style={{ color: personInvolved ? '#333' : '#888' }}>
+              {personInvolved || 'Select number of people involved'}
+            </Text>
+          </TouchableOpacity>
           <ThemedText style={styles.sectionLabel}>Detailed Description (optional)</ThemedText>
           <TextInput
             style={[styles.input, { minHeight: 60 }]}
@@ -274,6 +327,58 @@ export default function DashboardReportScreen() {
           </TouchableOpacity>
         </ThemedView>
       </ScrollView>
+
+      {/* Chief Complaint Dropdown Modal */}
+      <Modal visible={showComplaintDropdown} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <TouchableOpacity style={styles.modalClose} onPress={() => setShowComplaintDropdown(false)}>
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Select Chief Complaint</Text>
+            <ScrollView style={{ width: '100%', maxHeight: 300 }}>
+              {complaintOptions.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.dropdownOption}
+                  onPress={() => {
+                    setChiefComplaint(option);
+                    setShowComplaintDropdown(false);
+                  }}
+                >
+                  <Text style={styles.dropdownOptionText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Person Involved Dropdown Modal */}
+      <Modal visible={showPersonDropdown} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <TouchableOpacity style={styles.modalClose} onPress={() => setShowPersonDropdown(false)}>
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Select Number of People Involved</Text>
+            <ScrollView style={{ width: '100%', maxHeight: 300 }}>
+              {personInvolvedOptions.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.dropdownOption}
+                  onPress={() => {
+                    setPersonInvolved(option);
+                    setShowPersonDropdown(false);
+                  }}
+                >
+                  <Text style={styles.dropdownOptionText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -385,5 +490,47 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalClose: {
+    alignSelf: 'flex-end',
+    padding: 10,
+  },
+  modalCloseText: {
+    fontSize: 24,
+    color: '#333',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#FF3B3B',
+  },
+  dropdownOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  dropdownOptionText: {
+    fontSize: 16,
+    color: '#333',
   },
 }); 
